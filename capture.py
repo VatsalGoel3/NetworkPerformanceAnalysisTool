@@ -1,4 +1,4 @@
-from scapy.all import sniff, TCP, IP, get_if_list
+from scapy.all import sniff, TCP, IP, get_if_list, wrpcap
 import logging
 import time
 
@@ -33,19 +33,20 @@ def packet_callback(packet):
         # Logging the TCP packet details
         logging.info(f"TCP Packet: {src_ip}:{src_port} -> {dst_ip}:{dst_port} | Seq: {seq_num} | Ack: {ack_num} | Flags: {tcp_flags}")
 
-def capture_tcp_packets(interface, duration, store=False):
+def capture_tcp_packets(interface, duration, filename):
     """
     Captures TCP packets on the specified network interface for the specified duration.
 
     Parameters:
     - interface (str): The network interface to listen on.
     - duration (int): Duration in seconds for the packet capture.
-    - store (bool): Whether to store captured packets in memory.
+    - filename (str): The name of the file to save the captured packets.
     """
     try:
         logging.info(f"Starting TCP packet capture on {interface} for {duration} seconds...")
-        sniff(iface=interface, timeout=duration, filter="tcp", prn=packet_callback, store=store)
-        logging.info("Packet capture completed.")
+        packets = sniff(iface=interface, timeout=duration, filter="tcp", prn=packet_callback, store=True)
+        logging.info(f"Packet capture completed. Saving {len(packets)} packets to {filename}")
+        wrpcap(filename, packets)
     except PermissionError:
         logging.error("Permission denied. Try running as root or administrator.")
     except Exception as e:
@@ -59,4 +60,5 @@ if __name__ == "__main__":
     else:
         selected_interface = interfaces[choice]
         duration = int(input("Enter the duration of capture in seconds: "))
-        capture_tcp_packets(selected_interface, duration, store=False)
+        filename = input("Enter the filename to save captured packets (e.g. - capture.pcap): ")
+        capture_tcp_packets(selected_interface, duration, filename)
