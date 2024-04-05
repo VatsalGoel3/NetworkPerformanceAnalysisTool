@@ -1,4 +1,4 @@
-from scapy.all import sniff, TCP, IP, get_if_list, wrpcap
+from scapy.all import sniff, TCP, IP, get_if_list, wrpcap, get_if_addr
 import logging
 import time
 import speedtest
@@ -6,15 +6,20 @@ import speedtest
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def list_interfaces():
+def list_active_interfaces():
     """
-    List all network interfaces available on the system.
+    List all active network interfaces on the system.
     """
-    interfaces = get_if_list()
-    logging.info("Available network interfaces:")
-    for idx, interface in enumerate(interfaces):
-        print(f"{idx + 1}: {interface}")
-    return interfaces
+    active_interfaces = []
+    for interface in get_if_list():
+        try:
+            if_addr = get_if_addr(interface)
+            if if_addr != '0.0.0.0': # Check if interface has non-default IPv4 address (To remove disabled or VPN interfaces from the list)
+                active_interfaces.append((interface, if_addr))
+        except ValueError as e:
+            # Will trigger if interface has no IPv4 address
+            continue
+    return active_interfaces
 
 def perform_speedtest():
     """
@@ -51,7 +56,7 @@ def packet_callback(packet):
         # Logging the TCP packet details
         logging.info(f"TCP Packet: {src_ip}:{src_port} -> {dst_ip}:{dst_port} | Seq: {seq_num} | Ack: {ack_num} | Flags: {tcp_flags}")
 
-def capture_tcp_packets(interface, duration, filename):
+def capture_tcp_packets(selected_interface, duration, filename):
     """
     Captures TCP packets on the specified network interface for the specified duration.
 
@@ -71,13 +76,17 @@ def capture_tcp_packets(interface, duration, filename):
         logging.error(f"An error occurred: {e}")
 
 if __name__ == "__main__":
-    perform_speedtest() #Not for selected interfaces
-    interfaces = list_interfaces()
+    #perform_speedtest() #Not for selected interfaces
+    interfaces = list_active_interfaces()
+    if interfaces:
+        logging.info("Active network interfaces:")
+        for idx, (interface, ip) in enumerate(interfaces):
+            logging.info(f"{idx + 1}: {interface} (IP: {ip})")
     choice = int(input("Select the interface to capture from (enter the number): ")) - 1
     if choice < 0 or choice >= len(interfaces):
         logging.error("Invalid interface selection.")
     else:
-        selected_interface = interfaces[choice]
+        selected_interface, selected_ip = interfaces[choice]
         duration = int(input("Enter the duration of capture in seconds: "))
         filename = input("Enter the filename to save captured packets (e.g. - capture.pcap): ")
         capture_tcp_packets(selected_interface, duration, filename)
