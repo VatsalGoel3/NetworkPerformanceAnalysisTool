@@ -1,6 +1,7 @@
 from scapy.all import sniff, TCP, IP, get_if_list, wrpcap
 import logging
 import time
+import speedtest
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -14,6 +15,23 @@ def list_interfaces():
     for idx, interface in enumerate(interfaces):
         print(f"{idx + 1}: {interface}")
     return interfaces
+
+def perform_speedtest():
+    """
+    Perform internet speedtest and logs the results
+    """
+
+    logging.info("Testing internet speed...")
+    st = speedtest.Speedtest()
+    st.get_servers()
+    best = st.get_best_server()
+    st.download
+    st.upload
+    ping_result = st.results.ping
+    download_speed = st.download() / 1000000 # In Mbps
+    upload_speed = st.upload() / 1000000 # In Mbps
+
+    logging.info(f"Speed Test Results: Ping: {ping_result} ms, Download: {download_speed:.2f} Mbps, Upload: {upload_speed:.2f} Mbps")
 
 def packet_callback(packet):
     """
@@ -53,6 +71,7 @@ def capture_tcp_packets(interface, duration, filename):
         logging.error(f"An error occurred: {e}")
 
 if __name__ == "__main__":
+    perform_speedtest() #Not for selected interfaces
     interfaces = list_interfaces()
     choice = int(input("Select the interface to capture from (enter the number): ")) - 1
     if choice < 0 or choice >= len(interfaces):
