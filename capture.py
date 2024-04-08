@@ -3,6 +3,7 @@ import logging
 import time
 import subprocess
 import speedtest
+import string
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -57,7 +58,7 @@ def packet_callback(packet):
         # Logging the TCP packet details
         logging.info(f"TCP Packet: {src_ip}:{src_port} -> {dst_ip}:{dst_port} | Seq: {seq_num} | Ack: {ack_num} | Flags: {tcp_flags}")
 
-def capture_tcp_packets(selected_interface, duration, filename):
+def capture_tcp_packets(selected_interface, duration, filename, filter):
     """
     Captures TCP packets on the specified network interface for the specified duration.
 
@@ -65,10 +66,11 @@ def capture_tcp_packets(selected_interface, duration, filename):
     - interface (str): The network interface to listen on.
     - duration (int): Duration in seconds for the packet capture.
     - filename (str): The name of the file to save the captured packets.
+    - filter (str): The user selected packet filter
     """
     try:
-        logging.info(f"Starting TCP packet capture on {interface} for {duration} seconds...")
-        packets = sniff(iface=interface, timeout=duration, filter="tcp", prn=packet_callback, store=True)
+        logging.info(f"Starting {filter.upper()} packet capture on {selected_interface} for {duration} seconds...")
+        packets = sniff(iface=selected_interface, timeout=duration, filter=filter, prn=packet_callback, store=True)
         logging.info(f"Packet capture completed. Saving {len(packets)} packets to {filename}")
         wrpcap(filename, packets)
     except PermissionError:
@@ -78,6 +80,10 @@ def capture_tcp_packets(selected_interface, duration, filename):
 
 if __name__ == "__main__":
     interfaces = list_active_interfaces()
+    print("Network Performance Measurement Tool")
+    custom_filter = input("Enter a custom filter (BPF Syntax) or default to TCP packets: ").strip()
+    if not custom_filter:
+        custom_filter = "tcp"
     if interfaces:
         logging.info("Active network interfaces:")
         for idx, (interface, ip) in enumerate(interfaces):
@@ -89,5 +95,5 @@ if __name__ == "__main__":
         selected_interface, selected_ip = interfaces[choice]
         duration = int(input("Enter the duration of capture in seconds: "))
         filename = input("Enter the filename to save captured packets (e.g. - capture.pcap): ")
-        capture_tcp_packets(selected_interface, duration, filename)
+        capture_tcp_packets(selected_interface, duration, filename, custom_filter)
     perform_speedtest() #Not for selected interfaces
