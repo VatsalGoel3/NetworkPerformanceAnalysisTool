@@ -1,6 +1,7 @@
 from scapy.all import sniff, TCP, IP, get_if_list, wrpcap, get_if_addr
 import logging
 import time
+import subprocess
 import speedtest
 
 # Configure logging
@@ -76,7 +77,6 @@ def capture_tcp_packets(selected_interface, duration, filename):
         logging.error(f"An error occurred: {e}")
 
 if __name__ == "__main__":
-    #perform_speedtest() #Not for selected interfaces
     interfaces = list_active_interfaces()
     if interfaces:
         logging.info("Active network interfaces:")
@@ -90,3 +90,4 @@ if __name__ == "__main__":
         duration = int(input("Enter the duration of capture in seconds: "))
         filename = input("Enter the filename to save captured packets (e.g. - capture.pcap): ")
         capture_tcp_packets(selected_interface, duration, filename)
+    perform_speedtest() #Not for selected interfaces
